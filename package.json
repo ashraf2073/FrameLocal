@@ -1,0 +1,32 @@
+{
+  "name": "framelocal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FrameLocal - an offline-first, serverless photo feed. Everything stays on your device.",
+  "author": "Ashraf",
+  "license": "MIT",
+  "scripts": {
+    "serve": "serve www -l 5173 --no-clipboard",
+    "vendor": "node scripts/vendor.mjs",
+    "icons": "capacitor-assets generate --android --iconBackgroundColor \\\"#060606\\\" --iconBackgroundColorDark \\\"#060606\\\" --splashBackgroundColor \\\"#060606\\\" --splashBackgroundColorDark \\\"#060606\\\"",
+    "android:add": "cap add android",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:debug": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@tailwindcss/browser": "^4.3.3",
+    "serve": "^14.2.4",
+    "sharp": "^0.35.5"
+  }
+}

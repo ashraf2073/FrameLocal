@@ -1,0 +1,181 @@
+<!doctype html>
+<!--
+  FrameLocal - a serverless photo feed that lives entirely on your device.
+  Made by Ashraf.
+-->
+<html lang="en" class="fl-booting" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="description" content="FrameLocal: share photos with yourself and friends. No account, no server. Everything stays on your device." />
+    <meta name="author" content="Ashraf" />
+    <title>FrameLocal</title>
+
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="css/app.css" />
+
+    <!-- Apply the saved theme before first paint (no light/dark flash). -->
+    <script>
+      (function () {
+        var root = document.documentElement;
+        try {
+          var pref = localStorage.getItem('fl:theme') || 'system';
+          var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          root.classList.toggle('dark', dark);
+          root.setAttribute('data-theme', pref);
+          document.querySelector('meta[name=theme-color]').setAttribute('content', dark ? '#050505' : '#f6f6f5');
+        } catch (e) {
+          root.classList.add('dark');
+        }
+        // Safety net: never leave the screen blank if something fails to start.
+        setTimeout(function () { root.classList.remove('fl-booting'); }, 2500);
+      })();
+    </script>
+
+    <!-- Capacitor runtime (a no-op in the browser). -->
+    <script src="vendor/capacitor.js"></script>
+
+    <!--
+      Tailwind CSS (CDN build). A copy is bundled in /vendor so the app also works offline and inside the APK.
+      If that file is ever missing, the CDN copy is loaded instead.
+    -->
+    <script
+      src="vendor/tailwindcss-browser.js"
+      onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4';document.head.appendChild(s);"
+    ></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-bg: var(--c-bg);
+        --color-surface: var(--c-surface);
+        --color-raised: var(--c-raised);
+        --color-line: var(--c-line);
+        --color-ink: var(--c-ink);
+        --color-muted: var(--c-muted);
+        --color-gold: var(--c-gold);
+        --color-danger: var(--c-danger);
+        --font-sans: var(--f-sans);
+        --font-serif: var(--f-serif);
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>FrameLocal needs JavaScript to run.</noscript>
+
+    <div class="app" id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" id="brand-mark"></span>
+          <h1 class="brand-name">FrameLocal</h1>
+        </div>
+        <button class="icon-btn text-ink" id="theme-toggle" type="button"></button>
+      </header>
+
+      <main class="views" id="views">
+        <!-- FEED -->
+        <section class="view" id="view-feed" data-view="feed" aria-label="Feed">
+          <div class="pad">
+            <div class="feed-list" id="feed-list"></div>
+            <div class="empty" id="feed-empty" hidden>
+              <span class="brand-mark" id="feed-empty-mark"></span>
+              <h2>Your feed is empty</h2>
+              <p>Posts you publish appear here. Everything stays on this device.</p>
+              <button class="btn btn-gold" type="button" data-go="create">Create a post</button>
+            </div>
+            <div id="feed-sentinel" class="h-px"></div>
+          </div>
+        </section>
+
+        <!-- CREATE -->
+        <section class="view" id="view-create" data-view="create" aria-label="Create post">
+          <div class="create">
+            <div class="vf" id="vf">
+              <i class="vf-corner tl"></i><i class="vf-corner tr"></i><i class="vf-corner bl"></i><i class="vf-corner br"></i>
+
+              <div class="vf-empty" id="vf-empty">
+                <h2>Frame something</h2>
+                <p>Take a photo or pick one from your gallery.</p>
+                <div class="vf-actions">
+                  <button class="btn btn-gold" type="button" id="btn-camera"></button>
+                  <button class="btn btn-ghost" type="button" id="btn-gallery"></button>
+                </div>
+              </div>
+
+              <div class="vf-busy" id="vf-busy" hidden role="status"><span class="spinner"></span>Preparing photo</div>
+
+              <div class="vf-photo" id="vf-photo" hidden>
+                <img id="vf-img" alt="Preview of the selected photo" />
+                <div class="vf-tools">
+                  <button class="chip" type="button" id="btn-replace"></button>
+                  <button class="chip" type="button" id="btn-remove"></button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="sr-only" for="caption">Caption</label>
+              <textarea id="caption" class="field field-serif" rows="3" maxlength="500" placeholder="Write a caption"></textarea>
+              <div class="counter" id="caption-count" aria-live="off">0 / 500</div>
+            </div>
+
+            <button class="btn btn-gold btn-block" type="button" id="btn-publish" disabled>Publish to Feed</button>
+          </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="view" id="view-profile" data-view="profile" aria-label="Profile">
+          <div class="pad">
+            <div class="profile-head">
+              <button class="avatar-btn" type="button" id="profile-avatar" aria-label="Edit profile"></button>
+              <div class="stats">
+                <div><b id="stat-posts">0</b><span>Posts</span></div>
+                <div><b id="stat-likes">0</b><span>Likes</span></div>
+              </div>
+            </div>
+            <h2 class="profile-name" id="profile-name"></h2>
+            <p class="profile-bio" id="profile-bio"></p>
+
+            <div class="mb-6 mt-5 flex gap-2">
+              <button class="btn btn-quiet flex-1" type="button" id="btn-edit-profile">Edit profile</button>
+              <button class="btn btn-quiet !px-0 w-[54px]" type="button" id="btn-settings" aria-label="Settings"></button>
+            </div>
+
+            <div class="tiles" id="profile-grid"></div>
+            <div class="empty" id="profile-empty" hidden>
+              <h2>No posts yet</h2>
+              <p>Photos you publish show up here as a grid.</p>
+              <button class="btn btn-gold" type="button" data-go="create">Create a post</button>
+            </div>
+
+            <p class="credit">Made by Ashraf</p>
+          </div>
+        </section>
+      </main>
+
+      <nav class="tabbar" aria-label="Primary">
+        <button class="tab" type="button" data-tab="feed"><span class="tab-ico"></span><span>Feed</span></button>
+        <button class="tab" type="button" data-tab="create"><span class="tab-ico"></span><span>Create</span></button>
+        <button class="tab" type="button" data-tab="profile"><span class="tab-ico"></span><span>Profile</span></button>
+      </nav>
+    </div>
+
+    <div id="overlays"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- Hidden pickers. "capture" opens the camera on phones and is ignored on desktop. -->
+    <input type="file" id="file-camera" accept="image/*" capture="environment" hidden />
+    <input type="file" id="file-gallery" accept="image/*" hidden />
+    <input type="file" id="file-avatar" accept="image/*" hidden />
+    <input type="file" id="file-import" accept="application/json,.json" hidden />
+
+    <script src="js/utils.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/image.js"></script>
+    <script src="js/native.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
