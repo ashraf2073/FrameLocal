@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Unpack FrameLocal.zip if the project folders are missing
         run: |
